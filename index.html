@@ -1,71 +1,102 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Student Attendance System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Attendance — Fixed Full</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:12px; }
-    h1 { margin-bottom: 10px; font-size:1.3rem; }
-    .controls { margin-bottom: 12px; display:flex; flex-wrap:wrap; gap:8px; }
-    button { padding:6px 10px; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; }
-    button.add { background:#2563eb; color:white; }
-    button.format { background:#6b7280; color:white; }
-    input[type="date"] { padding:6px; font-size:0.9rem; }
+    body { font-family: Arial, Helvetica, sans-serif; background:#f3f4f6; margin:0; padding:14px; }
+    h1 { margin:0 0 12px 0; font-size:1.25rem; }
 
-    .clock {
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: #111827;
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      z-index: 1000;
-    }
+    .controls, .add-student, .filters, .bottom-controls { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    input, select, button { padding:6px 8px; font-size:0.92rem; }
+    button { border:0; border-radius:6px; cursor:pointer; }
+    button.add { background:#2563eb; color:#fff; }
+    button.format { background:#6b7280; color:#fff; }
+    button.json { background:#10b981; color:#fff; }
+    button.delete-btn { background:#ef4444; color:#fff; padding:6px 8px; border-radius:6px; }
+    button.edit-btn { background:#f59e0b; color:#fff; padding:6px 8px; border-radius:6px; }
 
-    .table-wrap {
-      overflow: auto;
-      background:white;
-      border-radius:6px;
-      box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      max-height: 80vh;
-      -webkit-overflow-scrolling: touch;
-    }
-    table { border-collapse: collapse; width:max-content; min-width:100%; font-size:0.85rem; }
-    th, td {
-      border:1px solid #ddd;
-      padding:6px 4px;
-      text-align:center;
-      vertical-align:middle;
-      white-space:nowrap;
-      background:white;
-    }
-    th { background:#e5e7eb; position:sticky; top:0; z-index:3; font-size:0.8rem; }
+    .clock { position: fixed; top: 10px; right: 10px; background:#111827; color:#fff; padding:6px 12px; border-radius:6px; z-index:2000; font-weight:600; font-size:0.85rem; }
+
+    .table-wrap { overflow:auto; background:#fff; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.08); max-height:72vh; -webkit-overflow-scrolling: touch; }
+    table { border-collapse:collapse; width:max-content; min-width:100%; font-size:0.88rem; }
+    th, td { border:1px solid #e6e6e6; padding:6px 8px; text-align:center; vertical-align:middle; white-space:nowrap; background:#fff; }
+    th { background:#eef2f6; position:sticky; top:0; z-index:5; font-weight:600; }
     td.name { text-align:left; }
 
-    /* freeze first 3 columns */
-    th.sticky, td.sticky { position: sticky; left:0; z-index:4; background:#f9fafb; min-width:70px; }
-    th.sticky2, td.sticky2 { position: sticky; left:70px; z-index:4; background:#f9fafb; min-width:60px; }
-    th.sticky3, td.sticky3 { position: sticky; left:130px; z-index:4; background:#f9fafb; min-width:120px; }
+    /* Sticky/freeze first 5 columns: % | Roll | Name | Class | Actions */
+    .sticky  { position:sticky; left:0;   z-index:6; background:#fbfefe; min-width:70px; }
+    .sticky2 { position:sticky; left:70px; z-index:6; background:#fbfefe; min-width:80px; }
+    .sticky3 { position:sticky; left:150px; z-index:6; background:#fbfefe; min-width:160px; text-align:left; }
+    .sticky4 { position:sticky; left:310px; z-index:6; background:#fbfefe; min-width:90px; }
+    .sticky5 { position:sticky; left:400px; z-index:6; background:#fbfefe; min-width:90px; }
 
-    thead tr:nth-child(2) th { background:#f3f4f6; font-weight:normal; }
-    thead tr:nth-child(3) th { background:#f9fafb; font-weight:normal; }
+    .state-btn { width:28px; height:28px; border-radius:6px; border:1px solid #cfcfcf; background:transparent; padding:0; cursor:pointer; }
+    .present { background:#22c55e !important; }
+    .late    { background:#facc15 !important; color:#000; }
+    .absent  { background:#ef4444 !important; }
 
-    .delete-btn { background:#ef4444; color:white; margin-left:5px; padding:2px 5px; font-size:0.7rem; }
-    button.state-btn { width:26px; height:26px; border-radius:4px; border:1px solid #ccc; }
-    .present { background:#22c55e; }
-    .late { background:#facc15; }
-    .absent { background:#ef4444; }
+    .delete-btn.small { padding:4px 6px; font-size:0.85rem; }
+    .actions-col { display:flex; gap:6px; justify-content:center; align-items:center; }
+
+    /* Modal */
+    .modal-overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:3000; }
+    .modal { background:#fff; padding:16px; border-radius:8px; width:92%; max-width:360px; box-shadow:0 10px 30px rgba(0,0,0,0.25); }
+    .modal h2 { margin:0 0 8px 0; font-size:1.05rem; }
+    .modal input, .modal select { width:100%; margin-bottom:8px; box-sizing:border-box; padding:8px; }
+    .modal .actions { display:flex; gap:8px; justify-content:flex-end; }
+    .btn-cancel { background:#6b7280; color:#fff; padding:8px 10px; border-radius:6px; }
+    .btn-save   { background:#2563eb; color:#fff; padding:8px 10px; border-radius:6px; }
+
+    @media (max-width:600px){
+      .sticky3 { min-width:120px; left:140px; }
+      .sticky4 { left:260px; }
+      .sticky5 { left:350px; }
+      th, td { font-size:0.82rem; padding:6px 6px; }
+      .state-btn { width:26px; height:26px; }
+    }
   </style>
 </head>
 <body>
-  <div class="clock" id="liveClock">--:--:--</div>
+
+  <div class="clock" id="liveClock">--</div>
 
   <h1>📋 Student Attendance</h1>
 
+  <!-- Add Student -->
+  <div class="add-student">
+    <input id="studentRoll" placeholder="Roll No." />
+    <input id="studentName" placeholder="Student Name" />
+    <select id="studentClass">
+      <option value="">Select Class</option>
+      <option value="10A">10A</option>
+      <option value="10B">10B</option>
+      <option value="10C">10C</option>
+      <option value="11A">11A</option>
+      <option value="11B">11B</option>
+      <option value="12A">12A</option>
+    </select>
+    <button class="add" onclick="addStudent()">➕ Add Student</button>
+  </div>
+
+  <!-- Filters + sort -->
+  <div class="filters">
+    <label>Filter Class:
+      <select id="filterClass" onchange="renderStudents()">
+        <option value="all">All</option>
+      </select>
+    </label>
+
+    <label>Sort By:
+      <select id="sortBy" onchange="renderStudents()">
+        <option value="roll">Roll No.</option>
+        <option value="name">Name</option>
+      </select>
+    </label>
+  </div>
+
+  <!-- Date controls -->
   <div class="controls">
     <input type="date" id="newDate" />
     <button class="add" onclick="addDate()">➕ Add Date</button>
@@ -73,78 +104,212 @@
   </div>
 
   <div class="table-wrap">
-    <table id="attendanceTable">
+    <table id="attendanceTable" role="table" aria-label="Attendance table">
       <thead>
         <tr id="headerRow">
           <th class="sticky">% Present</th>
           <th class="sticky2">Roll</th>
           <th class="sticky3">Name</th>
+          <th class="sticky4">Class</th>
+          <th class="sticky5">Actions</th>
         </tr>
         <tr id="countRow">
           <th class="sticky"></th>
           <th class="sticky2"></th>
           <th class="sticky3"></th>
+          <th class="sticky4"></th>
+          <th class="sticky5"></th>
         </tr>
       </thead>
       <tbody id="studentRows"></tbody>
     </table>
   </div>
 
+  <!-- bottom JSON controls -->
+  <div class="bottom-controls">
+    <button class="json" onclick="downloadJSON()">⬇️ Download JSON</button>
+    <label class="json" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+      ⬆️ Upload JSON
+      <input type="file" id="uploadJSON" accept="application/json" onchange="uploadJSON(event)" style="display:none;">
+    </label>
+  </div>
+
+  <!-- Edit modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <h2 id="editTitle">Edit Student</h2>
+      <input id="editRoll" placeholder="Roll No." />
+      <input id="editName" placeholder="Name" />
+      <select id="editClass">
+        <option value="10A">10A</option>
+        <option value="10B">10B</option>
+        <option value="10C">10C</option>
+        <option value="11A">11A</option>
+        <option value="11B">11B</option>
+        <option value="12A">12A</option>
+      </select>
+      <div class="actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+
 <script>
-const STUDENTS = [
-  {id:"01", name:"Aisha Khan"},
-  {id:"02", name:"Rahul Verma"},
-  {id:"03", name:"Sana Iqbal"},
-  {id:"04", name:"Vikram Patel"},
-  {id:"05", name:"Meera Joshi"},
-  {id:"06", name:"Arjun Sharma"},
-  {id:"07", name:"Priya Nair"},
-  {id:"08", name:"Kabir Malhotra"},
-  {id:"09", name:"Zoya Ansari"},
-  {id:"10", name:"Rohan Gupta"}
+/* --------------------------
+   Data / state
+   -------------------------- */
+let STUDENTS = [
+  {id:"01", name:"Aisha Khan", cls:"10A"},
+  {id:"02", name:"Rahul Verma", cls:"10A"},
+  {id:"03", name:"Sana Iqbal", cls:"10B"},
+  {id:"04", name:"Vikram Patel", cls:"10B"},
+  {id:"05", name:"Meera Joshi", cls:"10C"}
 ];
 
-let dates = [];
-let attendanceData = {}; 
-let dateFormat = 0; 
+let dates = []; // 'YYYY-MM-DD' array
+let attendanceData = {}; // { "YYYY-MM-DD": { "<roll>": "Present"|"Late"|"Absent" } }
+let dateFormat = 0; // 0=YYYY-MM-DD,1=DD/MM/YYYY,2=MMM dd
+let editingStudentId = null; // current roll being edited
+const STATIC_COLS = 5; // number of non-date columns
 
-function formatDate(d){
+/* --------------------------
+   Helpers
+   -------------------------- */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s]);
+}
+
+function formatDateDisplay(d){
   const dateObj = new Date(d);
   if(isNaN(dateObj)) return d;
-  if(dateFormat===0){
-    return d;
-  } else if(dateFormat===1){
-    return dateObj.toLocaleDateString("en-GB"); 
-  } else {
-    return dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  }
+  if(dateFormat === 0) return d;
+  if(dateFormat === 1) return dateObj.toLocaleDateString('en-GB');
+  return dateObj.toLocaleDateString('en-US', { month:'short', day:'numeric' });
 }
 
-function toggleDateFormat(){
-  dateFormat = (dateFormat+1)%3;
-  renderDates();
-  saveToStorage();
-}
-
+/* --------------------------
+   Render: students & dates & summary
+   -------------------------- */
 function renderStudents(){
   const tbody = document.getElementById('studentRows');
   tbody.innerHTML = '';
-  STUDENTS.forEach(s=>{
+
+  const filterClass = document.getElementById('filterClass').value || 'all';
+  const sortBy = document.getElementById('sortBy').value || 'roll';
+  let list = [...STUDENTS];
+
+  if(filterClass !== 'all') list = list.filter(s => s.cls === filterClass);
+  if(sortBy === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
+  else list.sort((a,b) => a.id.localeCompare(b.id));
+
+  list.forEach(s => {
     const tr = document.createElement('tr');
     tr.dataset.id = s.id;
     tr.innerHTML = `
       <td class="sticky percent">0%</td>
-      <td class="sticky2">${s.id}</td>
-      <td class="sticky3 name">${s.name}</td>
+      <td class="sticky2">${escapeHtml(s.id)}</td>
+      <td class="sticky3 name">${escapeHtml(s.name)}</td>
+      <td class="sticky4">${escapeHtml(s.cls)}</td>
+      <td class="sticky5 actions-col">
+        <button class="edit-btn" type="button" onclick="openEdit('${escapeHtml(s.id)}')">✏️</button>
+        <button class="delete-btn" type="button" onclick="deleteStudent('${escapeHtml(s.id)}')">🗑</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
+
+  renderDates(); // add date columns to visible rows
+  updateSummary();
 }
 
-function addDate(date){
-  const d = date || document.getElementById('newDate').value;
-  if(!d){ alert("Please choose a date."); return; }
-  if(dates.includes(d)){ alert("Date already added."); return; }
+/* Update class filter dropdown from student list (unique classes) */
+function updateClassFilter(){
+  const filter = document.getElementById('filterClass');
+  const classes = Array.from(new Set(STUDENTS.map(s => s.cls))).sort();
+  let html = `<option value="all">All</option>`;
+  classes.forEach(c => html += `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`);
+  filter.innerHTML = html;
+}
+
+/* --------------------------
+   Student operations
+   -------------------------- */
+function addStudent(){
+  const roll = document.getElementById('studentRoll').value.trim();
+  const name = document.getElementById('studentName').value.trim();
+  const cls  = document.getElementById('studentClass').value;
+  if(!roll || !name || !cls){ alert('Please enter Roll, Name and select Class'); return; }
+  if(STUDENTS.some(s => s.id === roll)){ alert('Roll already exists'); return; }
+  STUDENTS.push({ id: roll, name: name, cls: cls });
+  document.getElementById('studentRoll').value = '';
+  document.getElementById('studentName').value = '';
+  document.getElementById('studentClass').value = '';
+  updateClassFilter();
+  renderStudents();
+  saveToStorage();
+}
+
+/* Edit modal */
+function openEdit(roll){
+  const st = STUDENTS.find(s => s.id === roll);
+  if(!st) return;
+  editingStudentId = st.id;
+  document.getElementById('editRoll').value = st.id;
+  document.getElementById('editName').value = st.name;
+  document.getElementById('editClass').value = st.cls;
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeModal(){
+  editingStudentId = null;
+  document.getElementById('editModal').style.display = 'none';
+}
+function saveEdit(){
+  if(!editingStudentId) return;
+  const st = STUDENTS.find(s => s.id === editingStudentId);
+  if(!st) return;
+  const newRoll = document.getElementById('editRoll').value.trim();
+  const newName = document.getElementById('editName').value.trim();
+  const newClass = document.getElementById('editClass').value;
+  if(!newRoll || !newName || !newClass){ alert('Fill all fields'); return; }
+  if(newRoll !== editingStudentId && STUDENTS.some(s => s.id === newRoll)){ alert('Roll already exists'); return; }
+
+  // migrate attendance if roll changed
+  if(newRoll !== st.id){
+    dates.forEach(d => {
+      if(attendanceData[d] && (st.id in attendanceData[d])){
+        attendanceData[d][newRoll] = attendanceData[d][st.id];
+        delete attendanceData[d][st.id];
+      }
+    });
+    st.id = newRoll;
+  }
+  st.name = newName;
+  st.cls = newClass;
+
+  closeModal();
+  updateClassFilter();
+  renderStudents();
+  saveToStorage();
+}
+
+/* Delete student */
+function deleteStudent(roll){
+  if(!confirm('Delete student with Roll ' + roll + ' ?')) return;
+  STUDENTS = STUDENTS.filter(s => s.id !== roll);
+  dates.forEach(d => { if(attendanceData[d]) delete attendanceData[d][roll]; });
+  updateClassFilter();
+  renderStudents();
+  saveToStorage();
+}
+
+/* --------------------------
+   Dates & attendance rendering
+   -------------------------- */
+function addDate(dateValue){
+  const d = dateValue || document.getElementById('newDate').value;
+  if(!d){ alert('Please pick a date'); return; }
+  if(dates.includes(d)){ alert('Date already added'); return; }
   dates.push(d);
   dates.sort();
   attendanceData[d] = attendanceData[d] || {};
@@ -152,140 +317,222 @@ function addDate(date){
   saveToStorage();
 }
 
+function deleteDate(dateStr){
+  if(!confirm('Delete date ' + formatDateDisplay(dateStr) + ' ?')) return;
+  dates = dates.filter(x => x !== dateStr);
+  delete attendanceData[dateStr];
+  renderDates();
+  saveToStorage();
+}
+
 function renderDates(){
   const headerRow = document.getElementById('headerRow');
-  const countRow = document.getElementById('countRow');
-  while(headerRow.cells.length > 3) headerRow.deleteCell(3);
-  while(countRow.cells.length > 3) countRow.deleteCell(3);
-  document.querySelectorAll('#studentRows tr').forEach(tr=>{
-    while(tr.cells.length > 3) tr.deleteCell(3);
+  const countRow  = document.getElementById('countRow');
+
+  // remove existing date header cells
+  while(headerRow.cells.length > STATIC_COLS) headerRow.deleteCell(STATIC_COLS);
+  while(countRow.cells.length > STATIC_COLS) countRow.deleteCell(STATIC_COLS);
+
+  // remove date cells in each student row
+  document.querySelectorAll('#studentRows tr').forEach(tr => {
+    while(tr.cells.length > STATIC_COLS) tr.deleteCell(STATIC_COLS);
   });
 
-  dates.forEach(d=>{
+  // add date columns
+  dates.forEach(d => {
     const th = document.createElement('th');
-    th.innerHTML = formatDate(d) + `<br><button class="delete-btn" onclick="deleteDate('${d}')">🗑</button>`;
+    th.innerHTML = `${escapeHtml(formatDateDisplay(d))}<br><button class="delete-btn small" onclick="deleteDate('${d}')">🗑</button>`;
     headerRow.appendChild(th);
 
-    const countTh = document.createElement('th');
-    countTh.textContent = "P:0 / A:0 / L:0";
-    countRow.appendChild(countTh);
+    const cth = document.createElement('th');
+    cth.textContent = 'P:0 / A:0 / L:0';
+    countRow.appendChild(cth);
 
-    document.querySelectorAll('#studentRows tr').forEach(tr=>{
+    // add cell per visible row
+    document.querySelectorAll('#studentRows tr').forEach(tr => {
       const td = document.createElement('td');
       const roll = tr.dataset.id;
       const btn = document.createElement('button');
-      btn.className="state-btn";
-
-      btn.onclick = ()=>{
-        cycleState(btn, d, roll);
-        updateSummary();
-        saveToStorage();
-      };
-
+      btn.type = 'button';
+      btn.className = 'state-btn';
+      btn.title = 'No mark';
+      btn.onclick = () => { cycleState(btn, d, roll); updateSummary(); saveToStorage(); };
       td.appendChild(btn);
       tr.appendChild(td);
 
-      if(attendanceData[d] && attendanceData[d][roll]){
-        cycleState(btn, d, roll, true);
-      }
+      // restore saved state silently
+      if(attendanceData[d] && attendanceData[d][roll]) cycleState(btn, d, roll, true);
     });
   });
 
   updateSummary();
 }
 
+/* cycle attendance state: "", Present, Late, Absent */
 function cycleState(btn, d, roll, restore=false){
   const states = ["", "Present", "Late", "Absent"];
-  let current = attendanceData[d][roll] || "";
+  const current = (attendanceData[d] && attendanceData[d][roll]) ? attendanceData[d][roll] : "";
   let idx = states.indexOf(current);
-  if(!restore) idx = (idx+1) % states.length;
-  let newState = states[idx];
-  attendanceData[d][roll] = newState;
+  if(!restore) idx = (idx + 1) % states.length;
+  const newState = states[idx];
 
-  btn.className = "state-btn";
-  if(newState==="Present"){ btn.classList.add("present"); }
-  else if(newState==="Late"){ btn.classList.add("late"); }
-  else if(newState==="Absent"){ btn.classList.add("absent"); }
+  attendanceData[d] = attendanceData[d] || {};
+  if(newState === "") delete attendanceData[d][roll];
+  else attendanceData[d][roll] = newState;
+
+  // update button visual
+  btn.className = 'state-btn';
+  btn.title = newState || 'No mark';
+  if(newState === 'Present') btn.classList.add('present');
+  else if(newState === 'Late') btn.classList.add('late');
+  else if(newState === 'Absent') btn.classList.add('absent');
 }
 
+/* --------------------------
+   Summaries & percent
+   -------------------------- */
 function updateSummary(){
-  dates.forEach((d, idx)=>{
+  // update counts per date for visible rows
+  dates.forEach((d, idx) => {
     let p=0,a=0,l=0;
-    document.querySelectorAll('#studentRows tr').forEach(tr=>{
-      const val = attendanceData[d][tr.dataset.id] || "";
-      if(val==="Present") p++;
-      else if(val==="Absent") a++;
-      else if(val==="Late") l++;
+    document.querySelectorAll('#studentRows tr').forEach(tr => {
+      const roll = tr.dataset.id;
+      const val = (attendanceData[d] && attendanceData[d][roll]) ? attendanceData[d][roll] : "";
+      if(val === 'Present') p++;
+      else if(val === 'Late') l++;
+      else if(val === 'Absent') a++;
     });
-    document.getElementById('countRow').cells[3+idx].textContent = `P:${p} / A:${a} / L:${l}`;
+    const cell = document.getElementById('countRow').cells[STATIC_COLS + idx];
+    if(cell) cell.textContent = `P:${p} / A:${a} / L:${l}`;
   });
 
-  document.querySelectorAll('#studentRows tr').forEach(tr=>{
+  // percent per visible student (Late = 0.5)
+  document.querySelectorAll('#studentRows tr').forEach(tr => {
     const roll = tr.dataset.id;
+    const percentCell = tr.querySelector('.percent');
     let total = dates.length;
     let points = 0;
-    dates.forEach(d=>{
-      if(attendanceData[d]){
-        if(attendanceData[d][roll]==="Present") points += 1;
-        else if(attendanceData[d][roll]==="Late") points += 0.5;
-      }
+    dates.forEach(d => {
+      const v = (attendanceData[d] && attendanceData[d][roll]) ? attendanceData[d][roll] : "";
+      if(v === 'Present') points += 1;
+      else if(v === 'Late') points += 0.5;
     });
-    let percent = total>0 ? Math.round((points/total)*100) : 0;
-    tr.querySelector('.percent').textContent = percent+"%";
+    const pct = (total > 0) ? Math.round((points / total) * 100) : 0;
+    if(percentCell) percentCell.textContent = pct + '%';
   });
 }
 
-function deleteDate(date){
-  if(confirm("Delete date "+formatDate(date)+" ?")){
-    dates = dates.filter(d=>d!==date);
-    delete attendanceData[date];
-    renderDates();
-    saveToStorage();
-  }
+/* --------------------------
+   Storage / JSON import-export
+   -------------------------- */
+function normalizeStudentsArray(arr){
+  return (arr || []).map(s => {
+    // support older JSON that used "class" property
+    if(s && s.class && !s.cls){ s.cls = s.class; delete s.class; }
+    return { id: String(s.id || ''), name: String(s.name || ''), cls: String(s.cls || '') };
+  }).filter(s => s.id && s.name);
 }
 
 function saveToStorage(){
-  localStorage.setItem("attendanceDates", JSON.stringify(dates));
-  localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
-  localStorage.setItem("dateFormat", dateFormat);
+  localStorage.setItem('attendanceStudents', JSON.stringify(STUDENTS));
+  localStorage.setItem('attendanceDates', JSON.stringify(dates));
+  localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+  localStorage.setItem('attendanceDateFormat', String(dateFormat));
 }
 
 function loadFromStorage(){
-  const savedDates = JSON.parse(localStorage.getItem("attendanceDates")||"[]");
-  const savedData = JSON.parse(localStorage.getItem("attendanceData")||"{}");
-  const savedFormat = localStorage.getItem("dateFormat");
-  if(savedFormat!==null) dateFormat = parseInt(savedFormat);
-  if(savedDates.length>0){
-    dates = savedDates.sort();
-    attendanceData = savedData;
-    renderDates();
+  try {
+    const s = JSON.parse(localStorage.getItem('attendanceStudents') || '[]');
+    const ds = JSON.parse(localStorage.getItem('attendanceDates') || '[]');
+    const ad = JSON.parse(localStorage.getItem('attendanceData') || '{}');
+    const df = localStorage.getItem('attendanceDateFormat');
+
+    if(Array.isArray(s) && s.length) STUDENTS = normalizeStudentsArray(s);
+    if(Array.isArray(ds) && ds.length) dates = ds.sort();
+    attendanceData = (ad && typeof ad === 'object') ? ad : {};
+    if(df !== null) dateFormat = parseInt(df);
+
+  } catch(e) {
+    console.warn('loadFromStorage parse error', e);
   }
+  updateClassFilter();
+  renderStudents();
 }
 
-// ✅ Pre-fill today in date picker
+function downloadJSON(){
+  const payload = { students: STUDENTS, dates: dates, attendance: attendanceData, format: dateFormat };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'attendance.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function uploadJSON(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      STUDENTS = normalizeStudentsArray(Array.isArray(data.students) ? data.students : []);
+      dates = Array.isArray(data.dates) ? data.dates.sort() : [];
+      attendanceData = (data.attendance && typeof data.attendance === 'object') ? data.attendance : {};
+      dateFormat = Number.isInteger(data.format) ? data.format : dateFormat;
+      saveToStorage();
+      updateClassFilter();
+      renderStudents();
+      setTodayInDatePicker();
+      alert('JSON imported successfully');
+    } catch(err) {
+      alert('Invalid JSON file: ' + (err.message||''));
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* --------------------------
+   Date picker & clock & format toggle
+   -------------------------- */
 function setTodayInDatePicker(){
   const today = new Date();
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth()+1).padStart(2,'0');
   const dd = String(today.getDate()).padStart(2,'0');
-  document.getElementById("newDate").value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById('newDate').value = `${yyyy}-${mm}-${dd}`;
 }
 
-// Live Date & Time
 function updateClock(){
   const now = new Date();
   const options = { weekday:'short', year:'numeric', month:'short', day:'numeric' };
   const dateStr = now.toLocaleDateString(undefined, options);
   const timeStr = now.toLocaleTimeString();
-  document.getElementById('liveClock').textContent = dateStr + " " + timeStr;
+  const el = document.getElementById('liveClock');
+  if(el) el.textContent = `${dateStr} ${timeStr}`;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-// init
-renderStudents();
-loadFromStorage();
-setTodayInDatePicker(); 
+function toggleDateFormat(){
+  dateFormat = (dateFormat + 1) % 3;
+  renderDates();
+  saveToStorage();
+}
+
+/* --------------------------
+   Initialization
+   -------------------------- */
+function initApp(){
+  loadFromStorage();
+  updateClassFilter();
+  renderStudents();
+  setTodayInDatePicker();
+}
+initApp();
+
 </script>
 </body>
 </html>
