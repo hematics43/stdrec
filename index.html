@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Student Attendance System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:16px; }
+    h1 { margin-bottom: 12px; font-size:1.4rem; }
+    .controls { margin-bottom: 12px; display:flex; flex-wrap:wrap; gap:8px; }
+    button { padding:6px 10px; border:none; border-radius:4px; cursor:pointer; }
+    button.add { background:#2563eb; color:white; }
+    input[type="date"] { padding:6px; }
+
+    .clock {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #111827;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      z-index: 1000;
+    }
+
+    .table-wrap { overflow-x:auto; background:white; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.1); }
+    table { border-collapse: collapse; width:max-content; min-width:700px; }
+    th, td { border:1px solid #ddd; padding:6px; text-align:center; vertical-align:middle; font-size:0.9rem; white-space:nowrap; }
+    th { background:#e5e7eb; position:sticky; top:0; z-index:2; }
+    td.name { text-align:left; }
+
+    /* sticky left columns */
+    th.sticky, td.sticky { position: sticky; left:0; background:white; z-index:3; }
+    th.sticky2, td.sticky2 { position: sticky; left:60px; background:white; z-index:3; }
+    th.sticky3, td.sticky3 { position: sticky; left:120px; background:white; z-index:3; }
+
+    thead tr:nth-child(2) th { background:#f9fafb; font-weight:normal; }
+    thead tr:nth-child(3) th { background:#fafafa; font-weight:normal; }
+
+    .present { background:#22c55e; color:white; }
+    .late { background:#f59e0b; color:white; }
+    .absent { background:#ef4444; color:white; }
+  </style>
+</head>
+<body>
+  <div class="clock" id="liveClock">--:--:--</div>
+
+  <h1>📋 Student Attendance</h1>
+  <div class="controls">
+    <input type="date" id="newDate" />
+    <button class="add" onclick="addDate()">➕ Add Date</button>
+  </div>
+
+  <div class="table-wrap">
+    <table id="attendanceTable">
+      <thead>
+        <tr id="headerRow">
+          <th class="sticky">% Present</th>
+          <th class="sticky2">Roll</th>
+          <th class="sticky3">Name</th>
+        </tr>
+        <tr id="countRow">
+          <th class="sticky"></th>
+          <th class="sticky2"></th>
+          <th class="sticky3"></th>
+        </tr>
+      </thead>
+      <tbody id="studentRows"></tbody>
+    </table>
+  </div>
+
+<script>
+const STUDENTS = [
+  {id:"01", name:"Aisha Khan"},
+  {id:"02", name:"Rahul Verma"},
+  {id:"03", name:"Sana Iqbal"},
+  {id:"04", name:"Vikram Patel"},
+  {id:"05", name:"Meera Joshi"},
+  {id:"06", name:"Arjun Sharma"},
+  {id:"07", name:"Priya Nair"},
+  {id:"08", name:"Kabir Malhotra"},
+  {id:"09", name:"Zoya Ansari"},
+  {id:"10", name:"Rohan Gupta"}
+];
+
+let dates = [];
+let attendanceData = {}; // {date: {roll: "Present"/"Absent"/"Late"/""}}
+
+function renderStudents(){
+  const tbody = document.getElementById('studentRows');
+  tbody.innerHTML = '';
+  STUDENTS.forEach(s=>{
+    const tr = document.createElement('tr');
+    tr.dataset.id = s.id;
+    tr.innerHTML = `
+      <td class="sticky percent">0%</td>
+      <td class="sticky2">${s.id}</td>
+      <td class="sticky3 name">${s.name}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addDate(date){
+  const d = date || document.getElementById('newDate').value;
+  if(!d){ alert("Please choose a date."); return; }
+  if(dates.includes(d)){ alert("Date already added."); return; }
+  dates.push(d);
+  attendanceData[d] = attendanceData[d] || {};
+
+  const dateIndex = dates.length - 1;
+
+  // header
+  const th = document.createElement('th');
+  th.textContent = d;
+  document.getElementById('headerRow').appendChild(th);
+
+  // counts row
+  const countTh = document.createElement('th');
+  countTh.textContent = "P:0 / A:0 / L:0";
+  document.getElementById('countRow').appendChild(countTh);
+
+  // student cells
+  document.querySelectorAll('#studentRows tr').forEach(tr=>{
+    const td = document.createElement('td');
+    const roll = tr.dataset.id;
+
+    const btn = document.createElement('button');
+    btn.textContent = "";
+    btn.onclick = ()=>{
+      cycleState(btn, d, roll);
+      updateSummary();
+      saveToStorage();
+    };
+
+    td.appendChild(btn);
+    tr.appendChild(td);
+  });
+
+  updateSummary();
+  saveToStorage();
+}
+
+function cycleState(btn, d, roll){
+  const states = ["", "Present", "Late", "Absent"];
+  let current = attendanceData[d][roll] || "";
+  let idx = states.indexOf(current);
+  idx = (idx+1) % states.length;
+  let newState = states[idx];
+  attendanceData[d][roll] = newState;
+
+  btn.className = "";
+  if(newState==="Present"){ btn.textContent="✔"; btn.classList.add("present"); }
+  else if(newState==="Late"){ btn.textContent="⏰"; btn.classList.add("late"); }
+  else if(newState==="Absent"){ btn.textContent="✘"; btn.classList.add("absent"); }
+  else { btn.textContent=""; }
+}
+
+function updateSummary(){
+  // update column counts
+  dates.forEach((d, idx)=>{
+    let p=0,a=0,l=0;
+    document.querySelectorAll('#studentRows tr').forEach(tr=>{
+      const td = tr.cells[3+idx]; 
+      const btn = td.querySelector('button');
+      let val = attendanceData[d][tr.dataset.id] || "";
+      if(val==="Present") p++;
+      else if(val==="Absent") a++;
+      else if(val==="Late") l++;
+    });
+    document.getElementById('countRow').cells[3+idx].textContent = `P:${p} / A:${a} / L:${l}`;
+  });
+
+  // update per-student % present (Late not counted)
+  document.querySelectorAll('#studentRows tr').forEach(tr=>{
+    const roll = tr.dataset.id;
+    let total = dates.length;
+    let present = 0;
+    dates.forEach(d=>{
+      if(attendanceData[d] && attendanceData[d][roll]==="Present") present++;
+    });
+    let percent = total>0 ? Math.round((present/total)*100) : 0;
+    tr.querySelector('.percent').textContent = percent+"%";
+  });
+}
+
+function saveToStorage(){
+  localStorage.setItem("attendanceDates", JSON.stringify(dates));
+  localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+}
+
+function loadFromStorage(){
+  const savedDates = JSON.parse(localStorage.getItem("attendanceDates")||"[]");
+  const savedData = JSON.parse(localStorage.getItem("attendanceData")||"{}");
+  if(savedDates.length>0){
+    dates = [];
+    attendanceData = savedData;
+    savedDates.forEach(d=>{
+      addDate(d);
+      // restore states
+      document.querySelectorAll('#studentRows tr').forEach(tr=>{
+        const roll = tr.dataset.id;
+        const td = tr.cells[3+dates.indexOf(d)];
+        const btn = td.querySelector('button');
+        if(attendanceData[d][roll]){
+          cycleState(btn, d, roll); // apply correct state
+        }
+      });
+    });
+  }
+}
+
+// Live Date & Time
+function updateClock(){
+  const now = new Date();
+  const options = { weekday:'short', year:'numeric', month:'short', day:'numeric' };
+  const dateStr = now.toLocaleDateString(undefined, options);
+  const timeStr = now.toLocaleTimeString();
+  document.getElementById('liveClock').textContent = dateStr + " " + timeStr;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// init
+renderStudents();
+loadFromStorage();
+</script>
+</body>
+</html>
