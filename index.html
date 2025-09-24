@@ -27,7 +27,7 @@
     }
 
     .table-wrap {
-      overflow: auto; /* scroll both ways */
+      overflow: auto;
       background:white;
       border-radius:6px;
       box-shadow:0 2px 6px rgba(0,0,0,0.1);
@@ -54,17 +54,18 @@
     thead tr:nth-child(2) th { background:#f3f4f6; font-weight:normal; }
     thead tr:nth-child(3) th { background:#f9fafb; font-weight:normal; }
 
-    .present { background:#22c55e; color:white; }
-    .late { background:#f59e0b; color:white; }
-    .absent { background:#ef4444; color:white; }
     .delete-btn { background:#ef4444; color:white; margin-left:5px; padding:2px 5px; font-size:0.7rem; }
-    button.state-btn { width:28px; height:28px; font-size:0.9rem; border-radius:4px; }
+    button.state-btn { width:26px; height:26px; border-radius:4px; border:1px solid #ccc; }
+    .present { background:#22c55e; }
+    .late { background:#facc15; }
+    .absent { background:#ef4444; }
   </style>
 </head>
 <body>
   <div class="clock" id="liveClock">--:--:--</div>
 
   <h1>📋 Student Attendance</h1>
+
   <div class="controls">
     <input type="date" id="newDate" />
     <button class="add" onclick="addDate()">➕ Add Date</button>
@@ -105,7 +106,7 @@ const STUDENTS = [
 
 let dates = [];
 let attendanceData = {}; 
-let dateFormat = 0; // 0=YYYY-MM-DD, 1=DD/MM/YYYY, 2=MMM DD, YYYY
+let dateFormat = 0; 
 
 function formatDate(d){
   const dateObj = new Date(d);
@@ -113,7 +114,7 @@ function formatDate(d){
   if(dateFormat===0){
     return d;
   } else if(dateFormat===1){
-    return dateObj.toLocaleDateString("en-GB"); // DD/MM/YYYY
+    return dateObj.toLocaleDateString("en-GB"); 
   } else {
     return dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"});
   }
@@ -174,7 +175,6 @@ function renderDates(){
       const roll = tr.dataset.id;
       const btn = document.createElement('button');
       btn.className="state-btn";
-      btn.textContent = "";
 
       btn.onclick = ()=>{
         cycleState(btn, d, roll);
@@ -203,10 +203,9 @@ function cycleState(btn, d, roll, restore=false){
   attendanceData[d][roll] = newState;
 
   btn.className = "state-btn";
-  if(newState==="Present"){ btn.textContent="✔"; btn.classList.add("present"); }
-  else if(newState==="Late"){ btn.textContent="⏰"; btn.classList.add("late"); }
-  else if(newState==="Absent"){ btn.textContent="✘"; btn.classList.add("absent"); }
-  else { btn.textContent=""; }
+  if(newState==="Present"){ btn.classList.add("present"); }
+  else if(newState==="Late"){ btn.classList.add("late"); }
+  else if(newState==="Absent"){ btn.classList.add("absent"); }
 }
 
 function updateSummary(){
@@ -286,7 +285,7 @@ updateClock();
 // init
 renderStudents();
 loadFromStorage();
-setTodayInDatePicker(); // 👈 auto-fill today
+setTodayInDatePicker(); 
 </script>
 </body>
 </html>
