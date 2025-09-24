@@ -5,13 +5,13 @@
   <title>Student Attendance System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:16px; }
-    h1 { margin-bottom: 12px; font-size:1.4rem; }
+    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:0; padding:12px; }
+    h1 { margin-bottom: 10px; font-size:1.3rem; }
     .controls { margin-bottom: 12px; display:flex; flex-wrap:wrap; gap:8px; }
-    button { padding:6px 10px; border:none; border-radius:4px; cursor:pointer; }
+    button { padding:6px 10px; border:none; border-radius:4px; cursor:pointer; font-size:0.85rem; }
     button.add { background:#2563eb; color:white; }
     button.format { background:#6b7280; color:white; }
-    input[type="date"] { padding:6px; }
+    input[type="date"] { padding:6px; font-size:0.9rem; }
 
     .clock {
       position: fixed;
@@ -27,29 +27,29 @@
     }
 
     .table-wrap {
-      overflow: auto; /* scroll both directions */
+      overflow: auto; /* scroll both ways */
       background:white;
       border-radius:6px;
       box-shadow:0 2px 6px rgba(0,0,0,0.1);
-      max-height: 80vh; /* keep on screen */
+      max-height: 80vh;
+      -webkit-overflow-scrolling: touch;
     }
-    table { border-collapse: collapse; width:max-content; min-width:700px; }
+    table { border-collapse: collapse; width:max-content; min-width:100%; font-size:0.85rem; }
     th, td {
       border:1px solid #ddd;
-      padding:6px;
+      padding:6px 4px;
       text-align:center;
       vertical-align:middle;
-      font-size:0.9rem;
       white-space:nowrap;
       background:white;
     }
-    th { background:#e5e7eb; position:sticky; top:0; z-index:3; }
+    th { background:#e5e7eb; position:sticky; top:0; z-index:3; font-size:0.8rem; }
     td.name { text-align:left; }
 
     /* freeze first 3 columns */
-    th.sticky, td.sticky { position: sticky; left:0; z-index:4; background:#f9fafb; }
-    th.sticky2, td.sticky2 { position: sticky; left:60px; z-index:4; background:#f9fafb; }
-    th.sticky3, td.sticky3 { position: sticky; left:120px; z-index:4; background:#f9fafb; }
+    th.sticky, td.sticky { position: sticky; left:0; z-index:4; background:#f9fafb; min-width:70px; }
+    th.sticky2, td.sticky2 { position: sticky; left:70px; z-index:4; background:#f9fafb; min-width:60px; }
+    th.sticky3, td.sticky3 { position: sticky; left:130px; z-index:4; background:#f9fafb; min-width:120px; }
 
     thead tr:nth-child(2) th { background:#f3f4f6; font-weight:normal; }
     thead tr:nth-child(3) th { background:#f9fafb; font-weight:normal; }
@@ -57,7 +57,8 @@
     .present { background:#22c55e; color:white; }
     .late { background:#f59e0b; color:white; }
     .absent { background:#ef4444; color:white; }
-    .delete-btn { background:#ef4444; color:white; margin-left:5px; padding:2px 5px; font-size:0.75rem; }
+    .delete-btn { background:#ef4444; color:white; margin-left:5px; padding:2px 5px; font-size:0.7rem; }
+    button.state-btn { width:28px; height:28px; font-size:0.9rem; border-radius:4px; }
   </style>
 </head>
 <body>
@@ -114,7 +115,7 @@ function formatDate(d){
   } else if(dateFormat===1){
     return dateObj.toLocaleDateString("en-GB"); // DD/MM/YYYY
   } else {
-    return dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    return dateObj.toLocaleDateString("en-US",{month:"short",day:"numeric"});
   }
 }
 
@@ -161,7 +162,7 @@ function renderDates(){
 
   dates.forEach(d=>{
     const th = document.createElement('th');
-    th.innerHTML = formatDate(d) + ` <button class="delete-btn" onclick="deleteDate('${d}')">🗑</button>`;
+    th.innerHTML = formatDate(d) + `<br><button class="delete-btn" onclick="deleteDate('${d}')">🗑</button>`;
     headerRow.appendChild(th);
 
     const countTh = document.createElement('th');
@@ -172,6 +173,7 @@ function renderDates(){
       const td = document.createElement('td');
       const roll = tr.dataset.id;
       const btn = document.createElement('button');
+      btn.className="state-btn";
       btn.textContent = "";
 
       btn.onclick = ()=>{
@@ -200,7 +202,7 @@ function cycleState(btn, d, roll, restore=false){
   let newState = states[idx];
   attendanceData[d][roll] = newState;
 
-  btn.className = "";
+  btn.className = "state-btn";
   if(newState==="Present"){ btn.textContent="✔"; btn.classList.add("present"); }
   else if(newState==="Late"){ btn.textContent="⏰"; btn.classList.add("late"); }
   else if(newState==="Absent"){ btn.textContent="✘"; btn.classList.add("absent"); }
@@ -261,6 +263,16 @@ function loadFromStorage(){
   }
 }
 
+// ✅ Pre-fill today in date picker
+function setTodayInDatePicker(){
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  document.getElementById("newDate").value = `${yyyy}-${mm}-${dd}`;
+}
+
+// Live Date & Time
 function updateClock(){
   const now = new Date();
   const options = { weekday:'short', year:'numeric', month:'short', day:'numeric' };
@@ -271,8 +283,10 @@ function updateClock(){
 setInterval(updateClock, 1000);
 updateClock();
 
+// init
 renderStudents();
 loadFromStorage();
+setTodayInDatePicker(); // 👈 auto-fill today
 </script>
 </body>
 </html>
